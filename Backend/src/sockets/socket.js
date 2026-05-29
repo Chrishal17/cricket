@@ -46,9 +46,9 @@ const setupSockets = (io) => {
       if (tournament) {
         const match = await Match.findOne({ tournamentId, matchNumber: tournament.currentMatchNo });
         if (match) {
-          socket.emit('state_sync', { match, tournament });
+          io.to(getRoomName(tournamentId)).emit('state_sync', { match, tournament });
         } else {
-          socket.emit('state_sync', { tournament });
+          io.to(getRoomName(tournamentId)).emit('state_sync', { tournament });
         }
       }
 
