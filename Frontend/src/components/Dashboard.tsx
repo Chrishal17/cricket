@@ -8,6 +8,7 @@ export default function Dashboard() {
   const presence = useGameStore(state => state.presence);
   const notifications = useGameStore(state => state.notifications);
   const createTournament = useGameStore(state => state.createTournament);
+  const joinTournament = useGameStore(state => state.joinTournament);
   const logout = useGameStore(state => state.logout);
   const fetchMatchDetails = useGameStore(state => state.fetchMatchDetails);
   const restartMatch = useGameStore(state => state.restartMatch);
@@ -16,6 +17,11 @@ export default function Dashboard() {
   const [analytics, setAnalytics] = useState<any>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [activeTab, setActiveTab] = useState<'orange' | 'purple' | 'mvp' | 'sixes' | 'economy'>('orange');
+
+  // Local state for initial dashboard options (selection, create, join)
+  const [actionType, setActionType] = useState<'selection' | 'create' | 'join'>('selection');
+  const [joinCode, setJoinCode] = useState('');
+  const [joining, setJoining] = useState(false);
 
   // Local state for creating new tournament
   const [tourType, setTourType] = useState('best_of_10');
@@ -55,9 +61,22 @@ export default function Dashboard() {
         bouncerLimit,
         freeHitEnabled,
         squadSize: 11
-      });
+      }, tourType === 'custom' ? customMatches : undefined);
     } catch (err: any) {
       alert(err.message || 'Failed to create tournament');
+    }
+  };
+
+  const handleJoin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!joinCode.trim()) return;
+    setJoining(true);
+    try {
+      await joinTournament(joinCode);
+    } catch (err: any) {
+      alert(err.message || 'Failed to join tournament. Please verify the code.');
+    } finally {
+      setJoining(false);
     }
   };
 
@@ -135,107 +154,197 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center px-4 relative overflow-hidden">
         <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-amber-500/10 blur-[120px]" />
-        <div className="w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl p-8 relative z-10">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-extrabold bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent italic">
-              START TOURNAMENT
+        <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-amber-600/5 blur-[120px]" />
+        
+        <div className="w-full max-w-xl bg-zinc-900/90 border border-zinc-800 rounded-3xl p-8 relative z-10 backdrop-blur-xl shadow-2xl transition-all duration-300">
+          <div className="text-center mb-8">
+            <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase font-black px-3 py-1 rounded-full tracking-widest">
+              🏟️ Cric-Synco Arena
+            </span>
+            <h1 className="text-4xl font-black bg-gradient-to-r from-amber-400 via-amber-300 to-amber-100 bg-clip-text text-transparent italic mt-4 tracking-tight">
+              ARENA LOBBY
             </h1>
-            <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest">
-              Manager Room: {user?.username} ({user?.team})
+            <p className="text-zinc-500 text-xs mt-2 uppercase tracking-widest font-bold">
+              Active Session: @{user?.username} ({user?.team === 'AUS' ? '🇦🇺 Australia' : '🇮🇳 India'})
             </p>
           </div>
 
-          <form onSubmit={handleCreate} className="space-y-6">
-            <div>
-              <label className="block text-zinc-400 text-xs uppercase tracking-wider mb-2 font-bold">
-                Tournament Series Length
-              </label>
-              <select
-                value={tourType}
-                onChange={(e) => setTourType(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg px-4 py-3 text-zinc-200 outline-none text-sm"
-              >
-                <option value="best_of_5">Best of 5 Matches</option>
-                <option value="best_of_10">Best of 10 Matches (Recommended)</option>
-                <option value="best_of_20">Best of 20 Matches</option>
-                <option value="custom">Custom Length</option>
-              </select>
-            </div>
+          {actionType === 'selection' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* HOST CARD */}
+                <button
+                  type="button"
+                  onClick={() => setActionType('create')}
+                  className="group flex flex-col items-center justify-center p-6 bg-zinc-950/40 hover:bg-amber-500/[0.04] border border-zinc-800 hover:border-amber-500/30 rounded-2xl transition duration-300 text-center relative overflow-hidden"
+                >
+                  <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/5 rounded-full blur-xl group-hover:bg-amber-500/10 transition-all" />
+                  <span className="text-4xl mb-3 group-hover:scale-110 transition duration-300">🏆</span>
+                  <h3 className="text-base font-black text-zinc-200 group-hover:text-amber-400 transition">Host Tournament</h3>
+                  <p className="text-zinc-500 text-[11px] mt-2 leading-relaxed">
+                    Configure overs, match length, and get a secret code to share with your opponent.
+                  </p>
+                </button>
 
-            {tourType === 'custom' && (
+                {/* JOIN CARD */}
+                <button
+                  type="button"
+                  onClick={() => setActionType('join')}
+                  className="group flex flex-col items-center justify-center p-6 bg-zinc-950/40 hover:bg-amber-500/[0.04] border border-zinc-800 hover:border-amber-500/30 rounded-2xl transition duration-300 text-center relative overflow-hidden"
+                >
+                  <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/5 rounded-full blur-xl group-hover:bg-amber-500/10 transition-all" />
+                  <span className="text-4xl mb-3 group-hover:scale-110 transition duration-300">🤝</span>
+                  <h3 className="text-base font-black text-zinc-200 group-hover:text-amber-400 transition">Join Tournament</h3>
+                  <p className="text-zinc-500 text-[11px] mt-2 leading-relaxed">
+                    Enter an existing host code to connect to their active tournament series immediately.
+                  </p>
+                </button>
+              </div>
+
+              <div className="pt-4 border-t border-zinc-800/80">
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="w-full bg-zinc-950 border border-zinc-800/80 hover:bg-zinc-800/30 text-zinc-400 hover:text-zinc-200 font-extrabold uppercase py-3.5 rounded-xl transition text-xs tracking-wider"
+                >
+                  Leave Arena Lobby & Logout
+                </button>
+              </div>
+            </div>
+          )}
+
+          {actionType === 'create' && (
+            <form onSubmit={handleCreate} className="space-y-6">
               <div>
-                <label className="block text-zinc-400 text-xs uppercase tracking-wider mb-2 font-bold">
-                  Number of Matches
+                <label className="block text-zinc-400 text-[10px] uppercase tracking-wider mb-2 font-black">
+                  Tournament Series Length
+                </label>
+                <select
+                  value={tourType}
+                  onChange={(e) => setTourType(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-xl px-4 py-3.5 text-zinc-200 outline-none text-sm transition"
+                >
+                  <option value="best_of_5">Best of 5 Matches</option>
+                  <option value="best_of_10">Best of 10 Matches (Recommended)</option>
+                  <option value="best_of_20">Best of 20 Matches</option>
+                  <option value="custom">Custom Length</option>
+                </select>
+              </div>
+
+              {tourType === 'custom' && (
+                <div>
+                  <label className="block text-zinc-400 text-[10px] uppercase tracking-wider mb-2 font-black">
+                    Number of Matches
+                  </label>
+                  <input
+                    type="number"
+                    value={customMatches}
+                    onChange={(e) => setCustomMatches(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-xl px-4 py-3 text-zinc-200 outline-none text-sm transition"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-zinc-400 text-[10px] uppercase tracking-wider mb-2 font-black">
+                    Match Overs
+                  </label>
+                  <select
+                    value={matchOvers}
+                    onChange={(e) => setMatchOvers(parseInt(e.target.value))}
+                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-xl px-3 py-3.5 text-zinc-200 outline-none text-sm transition"
+                  >
+                    <option value="2">2 Overs (Quickie)</option>
+                    <option value="5">5 Overs (T5 Standard)</option>
+                    <option value="10">10 Overs</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-zinc-400 text-[10px] uppercase tracking-wider mb-2 font-black">
+                    Bouncer Limit / Over
+                  </label>
+                  <select
+                    value={bouncerLimit}
+                    onChange={(e) => setBouncerLimit(parseInt(e.target.value))}
+                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-xl px-3 py-3.5 text-zinc-200 outline-none text-sm transition"
+                  >
+                    <option value="1">1 Bouncer (Standard)</option>
+                    <option value="2">2 Bouncers</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 p-4 bg-zinc-950 rounded-xl border border-zinc-800/80">
+                <input
+                  id="freehit"
+                  type="checkbox"
+                  checked={freeHitEnabled}
+                  onChange={(e) => setFreeHitEnabled(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-800 text-amber-500 bg-zinc-900 focus:ring-amber-500"
+                />
+                <label htmlFor="freehit" className="text-xs font-bold text-zinc-400 select-none cursor-pointer">
+                  Enable Free Hit after No Balls
+                </label>
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setActionType('selection')}
+                  className="flex-1 border border-zinc-850 hover:bg-zinc-850 text-zinc-400 hover:text-zinc-200 font-extrabold uppercase py-3.5 rounded-xl transition text-xs tracking-wider"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className="flex-[2] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-zinc-950 font-black uppercase py-3.5 rounded-xl shadow-lg transition text-xs tracking-wider"
+                >
+                  Generate Host Code
+                </button>
+              </div>
+            </form>
+          )}
+
+          {actionType === 'join' && (
+            <form onSubmit={handleJoin} className="space-y-6">
+              <div>
+                <label className="block text-zinc-400 text-[10px] uppercase tracking-wider mb-3 font-black">
+                  Enter Tournament Secret Code
                 </label>
                 <input
-                  type="number"
-                  value={customMatches}
-                  onChange={(e) => setCustomMatches(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg px-4 py-3 text-zinc-200 outline-none text-sm"
+                  type="text"
+                  placeholder="E.g. A9B2KD"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-xl px-4 py-4 text-zinc-200 outline-none text-base tracking-widest text-center font-mono placeholder:text-zinc-700 focus:ring-1 focus:ring-amber-500 transition"
+                  maxLength={10}
+                  required
                 />
+                <p className="text-zinc-500 text-[10px] mt-2 leading-relaxed text-center">
+                  * Ask the host manager for the 6-character tournament code.
+                </p>
               </div>
-            )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-zinc-400 text-xs uppercase tracking-wider mb-2 font-bold">
-                  Match Overs
-                </label>
-                <select
-                  value={matchOvers}
-                  onChange={(e) => setMatchOvers(parseInt(e.target.value))}
-                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg px-3 py-3 text-zinc-200 outline-none text-sm"
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setActionType('selection')}
+                  className="flex-1 border border-zinc-850 hover:bg-zinc-850 text-zinc-400 hover:text-zinc-200 font-extrabold uppercase py-3.5 rounded-xl transition text-xs tracking-wider"
                 >
-                  <option value="2">2 Overs (Quickie)</option>
-                  <option value="5">5 Overs (T5 Standard)</option>
-                  <option value="10">10 Overs</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-zinc-400 text-xs uppercase tracking-wider mb-2 font-bold">
-                  Bouncer Limit / Over
-                </label>
-                <select
-                  value={bouncerLimit}
-                  onChange={(e) => setBouncerLimit(parseInt(e.target.value))}
-                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg px-3 py-3 text-zinc-200 outline-none text-sm"
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={joining}
+                  className="flex-[2] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-zinc-950 disabled:opacity-50 font-black uppercase py-3.5 rounded-xl shadow-lg transition text-xs tracking-wider"
                 >
-                  <option value="1">1 Bouncer (Standard)</option>
-                  <option value="2">2 Bouncers</option>
-                </select>
+                  {joining ? 'Connecting...' : 'Join Series'}
+                </button>
               </div>
-            </div>
-
-            <div className="flex items-center space-x-3 p-4 bg-zinc-950 rounded-xl border border-zinc-800">
-              <input
-                id="freehit"
-                type="checkbox"
-                checked={freeHitEnabled}
-                onChange={(e) => setFreeHitEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-zinc-800 text-amber-500 bg-zinc-900 focus:ring-amber-500"
-              />
-              <label htmlFor="freehit" className="text-sm font-bold text-zinc-300 select-none">
-                Enable Free Hit after No Balls
-              </label>
-            </div>
-
-            <div className="flex space-x-4 pt-4">
-              <button
-                type="button"
-                onClick={logout}
-                className="flex-1 border border-zinc-800 hover:bg-zinc-800/30 text-zinc-400 font-bold uppercase py-3.5 rounded-xl transition text-sm"
-              >
-                Log Out
-              </button>
-              <button
-                type="submit"
-                className="flex-[2] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-zinc-950 font-extrabold uppercase py-3.5 rounded-xl shadow-lg transition text-sm"
-              >
-                Generate Fixtures
-              </button>
-            </div>
-          </form>
+            </form>
+          )}
         </div>
       </div>
     );
@@ -266,6 +375,11 @@ export default function Dashboard() {
           <span className="bg-zinc-800 text-zinc-400 text-[10px] uppercase font-extrabold px-2 py-0.5 rounded tracking-widest">
             Broadcast Live
           </span>
+          {activeTournament.code && (
+            <span className="bg-amber-500/10 text-amber-400 border border-amber-500/25 text-[10px] font-black uppercase px-2.5 py-1 rounded tracking-wider flex items-center gap-1.5 animate-pulse">
+              🔑 CODE: {activeTournament.code}
+            </span>
+          )}
         </div>
 
         {/* Presence Board */}
@@ -425,6 +539,31 @@ export default function Dashboard() {
 
         {/* MIDDLE COLUMN: Match Schedule and Lobbies */}
         <div className="space-y-6">
+          {!activeTournament.joinedUserId && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 text-center">
+              <p className="text-amber-400 font-black text-xs uppercase tracking-widest mb-1 animate-pulse">
+                ⏳ Waiting for Opponent
+              </p>
+              <p className="text-zinc-400 text-xs leading-relaxed">
+                Share this secret code with your opponent so they can join this series:
+              </p>
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <span className="text-zinc-200 font-mono text-sm bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-800 tracking-widest select-all font-bold">
+                  {activeTournament.code}
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(activeTournament.code || '');
+                    alert('Secret code copied to clipboard!');
+                  }}
+                  className="text-[10px] bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold uppercase px-2.5 py-1.5 rounded-lg border border-zinc-700 transition"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+          )}
+
           <h2 className="text-zinc-400 text-xs font-extrabold uppercase tracking-widest flex items-center justify-between">
             <span>Tournament Fixtures</span>
             <span className="text-[10px] bg-zinc-900 border border-zinc-850 px-2.5 py-1 rounded text-zinc-500 font-bold">

@@ -40,6 +40,10 @@ const PlayerSchema = new mongoose.Schema({
 
 const TournamentSchema = new mongoose.Schema({
   creatorId: { type: String },
+  code: { type: String },
+  creatorTeam: { type: String },
+  joinedUserId: { type: String },
+  joinedTeam: { type: String },
   type: { type: String, enum: ['best_of_5', 'best_of_10', 'best_of_20', 'custom'], default: 'best_of_10' },
   totalMatches: { type: Number, default: 10 },
   matchesRemaining: { type: Number, default: 10 },

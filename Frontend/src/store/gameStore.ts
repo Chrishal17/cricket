@@ -12,6 +12,11 @@ interface User {
 interface Tournament {
   _id: string;
   id?: string;
+  code?: string;
+  creatorId?: string;
+  creatorTeam?: string;
+  joinedUserId?: string;
+  joinedTeam?: string;
   type: string;
   totalMatches: number;
   matchesRemaining: number;
@@ -160,7 +165,8 @@ interface GameStore {
   loadUserFromStorage: () => Promise<void>;
   
   fetchActiveTournament: () => Promise<void>;
-  createTournament: (type: string, settings: any) => Promise<void>;
+  createTournament: (type: string, settings: any, totalMatches?: number) => Promise<void>;
+  joinTournament: (code: string) => Promise<void>;
   fetchMatches: () => Promise<void>;
   fetchMatchDetails: (matchId: string) => Promise<void>;
   restartMatch: (matchId: string) => Promise<void>;
@@ -249,11 +255,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   fetchActiveTournament: async () => {
-    const res = await fetch(`${API_URL}/api/tournament/active`);
+    const token = get().token;
+    if (!token) return;
+    const res = await fetch(`${API_URL}/api/tournament/active`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     if (res.ok) {
       const data = await res.json();
       set({ activeTournament: data });
       if (data) {
+        get().initSocket();
         await get().fetchMatches();
         // Load notification feed
         const notifRes = await fetch(`${API_URL}/api/tournament/${data._id || data.id}/notifications`);
@@ -264,7 +275,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  createTournament: async (type, settings) => {
+  createTournament: async (type, settings, totalMatches) => {
     const token = get().token;
     const res = await fetch(`${API_URL}/api/tournament/create`, {
       method: 'POST',
@@ -272,12 +283,31 @@ export const useGameStore = create<GameStore>((set, get) => ({
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ type, settings })
+      body: JSON.stringify({ type, settings, totalMatches })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
     set({ activeTournament: data, activeMatch: null });
+    get().initSocket();
+    await get().fetchMatches();
+  },
+
+  joinTournament: async (code) => {
+    const token = get().token;
+    const res = await fetch(`${API_URL}/api/tournament/join`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    set({ activeTournament: data, activeMatch: null });
+    get().initSocket();
     await get().fetchMatches();
   },
 

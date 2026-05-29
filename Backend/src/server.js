@@ -113,10 +113,14 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 
 // --- TOURNAMENT ROUTES ---
 
-app.get('/api/tournament/active', async (req, res) => {
+app.get('/api/tournament/active', authenticateToken, async (req, res) => {
   try {
-    const activeTour = await Tournament.findOne({ status: 'active' });
-    res.json(activeTour);
+    // Queries compatible with Mongoose and file-based MockModel (avoiding complex $or)
+    let activeTour = await Tournament.findOne({ creatorId: req.user.id, status: 'active' });
+    if (!activeTour) {
+      activeTour = await Tournament.findOne({ joinedUserId: req.user.id, status: 'active' });
+    }
+    res.json(activeTour || null);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -124,8 +128,9 @@ app.get('/api/tournament/active', async (req, res) => {
 
 app.post('/api/tournament/create', authenticateToken, async (req, res) => {
   try {
-    // Delete any active tournament first (single active tournament support)
-    await Tournament.deleteMany({ status: 'active' });
+    // Delete any active tournament first for this user (compatibility-friendly separate queries)
+    await Tournament.deleteMany({ creatorId: req.user.id, status: 'active' });
+    await Tournament.deleteMany({ joinedUserId: req.user.id, status: 'active' });
 
     const { type, settings } = req.body;
     let totalMatches = 10;
@@ -134,8 +139,19 @@ app.post('/api/tournament/create', authenticateToken, async (req, res) => {
     else if (type === 'best_of_20') totalMatches = 20;
     else if (type === 'custom' && req.body.totalMatches) totalMatches = parseInt(req.body.totalMatches);
 
+    // Generate unique 6-character secret code
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let secretCode = '';
+    for (let i = 0; i < 6; i++) {
+      secretCode += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
     const newTournament = await Tournament.create({
       creatorId: req.user.id,
+      code: secretCode,
+      creatorTeam: req.user.team,
+      joinedUserId: null,
+      joinedTeam: null,
       type,
       totalMatches,
       matchesRemaining: totalMatches,
@@ -170,11 +186,56 @@ app.post('/api/tournament/create', authenticateToken, async (req, res) => {
     // Seed notification
     await Notification.create({
       tournamentId,
-      text: `🏆 New tournament started! Best of ${totalMatches} series.`,
+      text: `🏆 New tournament started! Code: ${secretCode}. Best of ${totalMatches} series.`,
       type: 'info'
     });
 
     res.status(201).json(newTournament);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/tournament/join', authenticateToken, async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ error: 'Secret code is required' });
+    }
+
+    const searchCode = code.toUpperCase().trim();
+    const tournament = await Tournament.findOne({ code: searchCode, status: 'active' });
+    if (!tournament) {
+      return res.status(404).json({ error: 'Active tournament not found with this secret code' });
+    }
+
+    if (tournament.creatorId === req.user.id) {
+      return res.status(400).json({ error: 'You are the creator of this tournament. Share the code with another manager.' });
+    }
+
+    // Delete any currently active tournaments for the joining user to avoid conflicts
+    await Tournament.deleteMany({ creatorId: req.user.id, status: 'active' });
+    await Tournament.deleteMany({ joinedUserId: req.user.id, status: 'active' });
+
+    tournament.joinedUserId = req.user.id;
+    tournament.joinedTeam = req.user.team;
+
+    if (typeof tournament.save === 'function') {
+      await tournament.save();
+    } else {
+      await Tournament.findByIdAndUpdate(tournament._id || tournament.id, tournament);
+    }
+
+    const tournamentId = tournament._id || tournament.id;
+
+    // Seed notification
+    await Notification.create({
+      tournamentId,
+      text: `🤝 Manager @${req.user.username} (${req.user.team}) joined the arena! Let the games begin.`,
+      type: 'joined'
+    });
+
+    res.json(tournament);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
