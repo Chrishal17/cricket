@@ -35,7 +35,12 @@ export default function Dashboard() {
     setLoadingAnalytics(true);
     try {
       const tourId = activeTournament._id || activeTournament.id;
-      const res = await fetch(`http://localhost:5000/api/tournament/${tourId}/analytics`);
+      const apiUrl = useGameStore.getState().apiUrl;
+      const res = await fetch(`${apiUrl}/api/tournament/${tourId}/analytics`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'any_value'
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setAnalytics(data);

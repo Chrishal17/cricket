@@ -20,7 +20,12 @@ export default function XISelection() {
   useEffect(() => {
     const fetchSquad = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/players');
+        const apiUrl = useGameStore.getState().apiUrl;
+        const res = await fetch(`${apiUrl}/api/players`, {
+          headers: {
+            'ngrok-skip-browser-warning': 'any_value'
+          }
+        });
         if (res.ok) {
           const allPlayers = await res.json();
           // Filter by manager's team

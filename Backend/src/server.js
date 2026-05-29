@@ -17,7 +17,7 @@ const server = http.createServer(app);
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
 };
 app.use(cors(corsOptions));
 app.use(express.json());
@@ -190,6 +190,9 @@ app.post('/api/tournament/create', authenticateToken, async (req, res) => {
       type: 'info'
     });
 
+    // Broadcast a global socket event to notify all connected clients
+    io.emit('tournament_created', { tournament: newTournament });
+
     res.status(201).json(newTournament);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -234,6 +237,9 @@ app.post('/api/tournament/join', authenticateToken, async (req, res) => {
       text: `🤝 Manager @${req.user.username} (${req.user.team}) joined the arena! Let the games begin.`,
       type: 'joined'
     });
+
+    // Broadcast to the tournament room that the tournament state has been updated
+    io.to(`tournament_${tournamentId}`).emit('tournament_updated', { tournament });
 
     res.json(tournament);
   } catch (error) {

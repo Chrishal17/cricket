@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 
-const API_URL = 'http://localhost:5000';
-
 interface User {
   id: string;
   username: string;
@@ -144,6 +142,8 @@ interface Notification {
 }
 
 interface GameStore {
+  apiUrl: string;
+  setApiUrl: (url: string) => void;
   token: string | null;
   user: User | null;
   socket: Socket | null;
@@ -187,6 +187,18 @@ interface GameStore {
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
+  apiUrl: localStorage.getItem('backend_url') || (window.location.port === '5173' ? `http://${window.location.hostname}:5000` : window.location.origin),
+  setApiUrl: (url) => {
+    localStorage.setItem('backend_url', url);
+    set({ apiUrl: url });
+    // Re-initialize socket to hook onto the new URL
+    const socket = get().socket;
+    if (socket) {
+      socket.disconnect();
+      set({ socket: null });
+      get().initSocket();
+    }
+  },
   token: localStorage.getItem('token'),
   user: null,
   socket: null,
@@ -200,9 +212,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   tossResultData: null,
 
   login: async (username, password) => {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
+    const res = await fetch(`${get().apiUrl}/api/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'any_value'
+      },
       body: JSON.stringify({ username, password })
     });
     const data = await res.json();
@@ -214,9 +229,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   register: async (username, password, team) => {
-    const res = await fetch(`${API_URL}/api/auth/register`, {
+    const res = await fetch(`${get().apiUrl}/api/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'any_value'
+      },
       body: JSON.stringify({ username, password, team })
     });
     const data = await res.json();
@@ -238,8 +256,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch(`${get().apiUrl}/api/auth/me`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'any_value'
+        }
       });
       const data = await res.json();
       if (data.error) {
@@ -257,8 +278,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   fetchActiveTournament: async () => {
     const token = get().token;
     if (!token) return;
-    const res = await fetch(`${API_URL}/api/tournament/active`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetch(`${get().apiUrl}/api/tournament/active`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'ngrok-skip-browser-warning': 'any_value'
+      }
     });
     if (res.ok) {
       const data = await res.json();
@@ -267,7 +291,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
         get().initSocket();
         await get().fetchMatches();
         // Load notification feed
-        const notifRes = await fetch(`${API_URL}/api/tournament/${data._id || data.id}/notifications`);
+        const notifRes = await fetch(`${get().apiUrl}/api/tournament/${data._id || data.id}/notifications`, {
+          headers: {
+            'ngrok-skip-browser-warning': 'any_value'
+          }
+        });
         if (notifRes.ok) {
           set({ notifications: await notifRes.json() });
         }
@@ -277,11 +305,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   createTournament: async (type, settings, totalMatches) => {
     const token = get().token;
-    const res = await fetch(`${API_URL}/api/tournament/create`, {
+    const res = await fetch(`${get().apiUrl}/api/tournament/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'ngrok-skip-browser-warning': 'any_value'
       },
       body: JSON.stringify({ type, settings, totalMatches })
     });
@@ -295,11 +324,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   joinTournament: async (code) => {
     const token = get().token;
-    const res = await fetch(`${API_URL}/api/tournament/join`, {
+    const res = await fetch(`${get().apiUrl}/api/tournament/join`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'ngrok-skip-browser-warning': 'any_value'
       },
       body: JSON.stringify({ code })
     });
@@ -315,14 +345,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const tour = get().activeTournament;
     if (!tour) return;
 
-    const res = await fetch(`${API_URL}/api/tournaments/${tour._id || tour.id}/matches`);
+    const res = await fetch(`${get().apiUrl}/api/tournaments/${tour._id || tour.id}/matches`, {
+      headers: {
+        'ngrok-skip-browser-warning': 'any_value'
+      }
+    });
     if (res.ok) {
       set({ matches: await res.json() });
     }
   },
 
   fetchMatchDetails: async (matchId) => {
-    const res = await fetch(`${API_URL}/api/matches/${matchId}`);
+    const res = await fetch(`${get().apiUrl}/api/matches/${matchId}`, {
+      headers: {
+        'ngrok-skip-browser-warning': 'any_value'
+      }
+    });
     if (res.ok) {
       set({ activeMatch: await res.json() });
     }
@@ -330,9 +368,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   restartMatch: async (matchId) => {
     const token = get().token;
-    const res = await fetch(`${API_URL}/api/matches/${matchId}/restart`, {
+    const res = await fetch(`${get().apiUrl}/api/matches/${matchId}/restart`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'ngrok-skip-browser-warning': 'any_value'
+      }
     });
     if (res.ok) {
       const data = await res.json();
@@ -343,12 +384,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   initSocket: () => {
     const { token, user, activeTournament, socket: existingSocket } = get();
-    if (!token || !user || !activeTournament) return;
+    if (!token || !user) return;
 
     if (existingSocket) {
       if (existingSocket.disconnected) {
         existingSocket.connect();
-      } else {
+      } else if (activeTournament) {
         // Emit user_joined for the current active tournament in case it changed or to re-sync
         existingSocket.emit('user_joined', {
           tournamentId: activeTournament._id || activeTournament.id,
@@ -360,7 +401,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    const socket = io(API_URL);
+    const socket = io(get().apiUrl, { transports: ['websocket'] });
 
     socket.on('connect', () => {
       console.log('🔌 Connected to server socket');
@@ -436,6 +477,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     socket.on('notification', (notif) => {
       set((state) => ({ notifications: [notif, ...state.notifications].slice(0, 30) }));
+    });
+
+    socket.on('tournament_created', ({ tournament }) => {
+      console.log('🏆 New tournament created globally:', tournament);
+      set({ activeTournament: tournament, activeMatch: null });
+      get().fetchMatches();
+      // Join the new tournament room
+      get().initSocket();
+    });
+
+    socket.on('tournament_updated', ({ tournament }) => {
+      console.log('🤝 Tournament updated in real-time:', tournament);
+      set({ activeTournament: tournament });
     });
 
     set({ socket });

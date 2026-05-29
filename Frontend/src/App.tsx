@@ -26,7 +26,7 @@ function App() {
 
   // Sync socket connection whenever token or tournament ID changes
   useEffect(() => {
-    if (token && tournamentId) {
+    if (token) {
       initSocket();
     }
   }, [token, tournamentId, initSocket]);

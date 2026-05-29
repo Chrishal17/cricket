@@ -11,6 +11,10 @@ export default function Auth() {
 
   const loginAction = useGameStore(state => state.login);
   const registerAction = useGameStore(state => state.register);
+  const apiUrl = useGameStore(state => state.apiUrl);
+  const setApiUrl = useGameStore(state => state.setApiUrl);
+  const [showSettings, setShowSettings] = useState(false);
+  const [localApiUrl, setLocalApiUrl] = useState(apiUrl);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,6 +144,40 @@ export default function Auth() {
 
         <div className="mt-8 text-center text-zinc-600 text-xs">
           For two players. One must be Australia manager, one India.
+        </div>
+
+        {/* Server Settings Expandable */}
+        <div className="mt-6 border-t border-zinc-800/50 pt-4">
+          <button
+            type="button"
+            onClick={() => setShowSettings(!showSettings)}
+            className="text-[11px] text-zinc-500 hover:text-zinc-300 font-bold uppercase tracking-wider flex items-center justify-center mx-auto space-x-1"
+          >
+            <span>⚙️</span> <span>{showSettings ? 'Hide Server Configuration' : 'Configure Server Connection'}</span>
+          </button>
+
+          {showSettings && (
+            <div className="mt-4 p-4 bg-zinc-950/80 border border-zinc-800 rounded-xl space-y-3">
+              <div>
+                <label className="block text-zinc-500 text-[10px] uppercase tracking-wider mb-1.5 font-bold">
+                  Backend Server URL
+                </label>
+                <input
+                  type="text"
+                  value={localApiUrl}
+                  onChange={(e) => {
+                    setLocalApiUrl(e.target.value);
+                    setApiUrl(e.target.value);
+                  }}
+                  className="w-full bg-zinc-900 border border-zinc-800 focus:border-amber-500 rounded-lg px-3 py-2 text-zinc-300 outline-none text-xs transition"
+                  placeholder="http://localhost:5000"
+                />
+              </div>
+              <p className="text-[10px] text-zinc-500 leading-relaxed text-left">
+                💡 <strong>Playing from different locations?</strong> Run a tunnel tool like <code>ngrok http 5000</code> on your backend machine and enter the generated public address here.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
