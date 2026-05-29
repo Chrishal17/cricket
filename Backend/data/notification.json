@@ -1,0 +1,114 @@
+[
+  {
+    "_id": "8rjbrg7hj",
+    "createdAt": "2026-05-29T16:58:21.719Z",
+    "tournamentId": "6a19c3b875cc8e09a2e6ec04",
+    "text": "Australia manager has joined.",
+    "type": "joined"
+  },
+  {
+    "_id": "yaqe24n3a",
+    "createdAt": "2026-05-29T16:58:21.724Z",
+    "tournamentId": "6a19c568a81f85a219f221af",
+    "text": "Australia manager has joined.",
+    "type": "joined"
+  },
+  {
+    "_id": "t3ov1i09c",
+    "createdAt": "2026-05-29T16:58:21.726Z",
+    "tournamentId": "6a19c3b875cc8e09a2e6ec04",
+    "text": "India manager has joined.",
+    "type": "joined"
+  },
+  {
+    "_id": "n54obv3ob",
+    "createdAt": "2026-05-29T16:58:21.731Z",
+    "tournamentId": "6a19c3b875cc8e09a2e6ec04",
+    "text": "India manager has joined.",
+    "type": "joined"
+  },
+  {
+    "_id": "ruksmpnnm",
+    "createdAt": "2026-05-29T16:58:24.349Z",
+    "tournamentId": "6a19c3b875cc8e09a2e6ec04",
+    "text": "India manager has joined.",
+    "type": "joined"
+  },
+  {
+    "_id": "igrt3cqs0",
+    "createdAt": "2026-05-29T16:58:25.358Z",
+    "tournamentId": "6a19c3b575cc8e09a2e6ebe9",
+    "text": "Australia manager has joined.",
+    "type": "joined"
+  },
+  {
+    "_id": "2qksk707j",
+    "createdAt": "2026-05-29T16:58:25.362Z",
+    "tournamentId": "6a19c566a81f85a219f221a2",
+    "text": "India manager has joined.",
+    "type": "joined"
+  },
+  {
+    "_id": "7ythzezyt",
+    "createdAt": "2026-05-29T16:58:26.361Z",
+    "tournamentId": "6a19c3b875cc8e09a2e6ec04",
+    "text": "Australia manager has joined.",
+    "type": "joined"
+  },
+  {
+    "_id": "9s5i1d66p",
+    "createdAt": "2026-05-29T17:00:05.652Z",
+    "tournamentId": "6a19c3b875cc8e09a2e6ec04",
+    "text": "Australia manager has disconnected.",
+    "type": "left"
+  },
+  {
+    "_id": "lzb09089q",
+    "createdAt": "2026-05-29T17:00:05.658Z",
+    "tournamentId": "6a19c3b875cc8e09a2e6ec04",
+    "text": "Australia manager has disconnected.",
+    "type": "left"
+  },
+  {
+    "_id": "pjhrc12i1",
+    "createdAt": "2026-05-29T17:00:05.662Z",
+    "tournamentId": "6a19c3b575cc8e09a2e6ebe9",
+    "text": "Australia manager has disconnected.",
+    "type": "left"
+  },
+  {
+    "_id": "o429dgrlx",
+    "createdAt": "2026-05-29T17:00:05.666Z",
+    "tournamentId": "6a19c568a81f85a219f221af",
+    "text": "Australia manager has disconnected.",
+    "type": "left"
+  },
+  {
+    "_id": "1mab0jy5f",
+    "createdAt": "2026-05-29T17:00:07.061Z",
+    "tournamentId": "6a19c3b875cc8e09a2e6ec04",
+    "text": "India manager has disconnected.",
+    "type": "left"
+  },
+  {
+    "_id": "jw28q2ib5",
+    "createdAt": "2026-05-29T17:00:07.064Z",
+    "tournamentId": "6a19c3b875cc8e09a2e6ec04",
+    "text": "India manager has disconnected.",
+    "type": "left"
+  },
+  {
+    "_id": "z88wqau7x",
+    "createdAt": "2026-05-29T17:00:07.066Z",
+    "tournamentId": "6a19c3b875cc8e09a2e6ec04",
+    "text": "India manager has disconnected.",
+    "type": "left"
+  },
+  {
+    "_id": "lshfvzd94",
+    "createdAt": "2026-05-29T17:00:07.069Z",
+    "tournamentId": "6a19c566a81f85a219f221a2",
+    "text": "India manager has disconnected.",
+    "type": "left"
+  }
+]
